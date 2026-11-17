@@ -19,6 +19,34 @@ def normalize_text(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip()
 
 
+def detect_sport(tournament: str, context: str = "") -> tuple[str, str]:
+    """Detect sport from tournament name or context."""
+    combined = normalize_text(f"{tournament} {context}")
+    if any(k in combined for k in ("basket", "سله")):
+        return "basketball", "🏀 كرة سلة (Basketball)"
+    if any(k in combined for k in ("volley", "طايره", "طائره")):
+        return "volleyball", "🏐 كرة طائرة (Volleyball)"
+    if any(k in combined for k in ("handball", "يد")):
+        return "handball", "🤾 كرة يد (Handball)"
+    return "football", "⚽ كرة قدم (Football)"
+
+
+@dataclass(frozen=True)
+class MatchInfo:
+    team1: str
+    team2: str
+    title: str
+    tournament: str
+    sport: str
+    sport_label: str
+    date: str
+    time: str
+    stadium: str
+    status: str
+    is_bookable: bool
+    match_key: str
+
+
 @dataclass(frozen=True)
 class MatchResult:
     is_open: bool
@@ -26,6 +54,7 @@ class MatchResult:
     matched_open: str | None = None
     reason: str = ""
     signature: str | None = None
+    matches: tuple[MatchInfo, ...] = ()
 
 
 def _compute_signature(matched_team: str, matched_open: str | None, context_text: str) -> str:
@@ -34,12 +63,95 @@ def _compute_signature(matched_team: str, matched_open: str | None, context_text
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 
+def parse_match_card(raw: dict) -> MatchInfo:
+    team1 = raw.get("team1", "").strip()
+    team2 = raw.get("team2", "").strip()
+    title = raw.get("title", f"{team1} vs {team2}").strip()
+    tournament = raw.get("tournament", "").strip()
+    date = raw.get("date", "").strip()
+    time = raw.get("time", "").strip()
+    stadium = raw.get("stadium", "").strip()
+    status = raw.get("status", raw.get("btnText", "")).strip() or "Available"
+    is_bookable = bool(raw.get("is_bookable", True))
+
+    sport, sport_label = detect_sport(tournament, title)
+    norm_key = f"{sport}|{normalize_text(team1)}_{normalize_text(team2)}|{normalize_text(date)}|{normalize_text(tournament)}"
+    match_key = hashlib.sha256(norm_key.encode("utf-8")).hexdigest()[:16]
+
+    return MatchInfo(
+        team1=team1,
+        team2=team2,
+        title=title,
+        tournament=tournament,
+        sport=sport,
+        sport_label=sport_label,
+        date=date,
+        time=time,
+        stadium=stadium,
+        status=status,
+        is_bookable=is_bookable,
+        match_key=match_key,
+    )
+
+
+def detect_matches_from_cards(
+    cards_data: list[dict],
+    team_keywords: tuple[str, ...],
+    football_only: bool = False,
+    require_bookable: bool = True,
+) -> list[MatchInfo]:
+    """Filter and parse structured match cards for target teams."""
+    matched: list[MatchInfo] = []
+    norm_keywords = [normalize_text(kw) for kw in team_keywords]
+
+    for raw in cards_data:
+        info = parse_match_card(raw)
+        norm_teams = normalize_text(f"{info.team1} {info.team2}")
+        team_matched = any(kw in norm_teams for kw in norm_keywords)
+        if not team_matched:
+            continue
+
+        if football_only and info.sport != "football":
+            continue
+
+        if require_bookable and not info.is_bookable:
+            continue
+
+        matched.append(info)
+
+    return matched
+
+
 def detect_availability(
     page_text: str,
     team_keywords: tuple[str, ...],
     open_keywords: tuple[str, ...],
     require_open_keyword: bool,
+    cards_data: list[dict] | None = None,
+    football_only: bool = False,
 ) -> MatchResult:
+    # If structured cards are present, use the high-fidelity parser
+    if cards_data:
+        matched_cards = detect_matches_from_cards(
+            cards_data,
+            team_keywords=team_keywords,
+            football_only=football_only,
+            require_bookable=require_open_keyword,
+        )
+        if matched_cards:
+            primary = matched_cards[0]
+            return MatchResult(
+                is_open=True,
+                matched_team=primary.title,
+                matched_open=primary.status,
+                reason=f"Found {len(matched_cards)} match(es) for {primary.title} ({primary.sport_label})",
+                signature=primary.match_key,
+                matches=tuple(matched_cards),
+            )
+        # If no target card is available or bookable
+        return MatchResult(False, reason="No matching bookable match card found")
+
+    # Fallback for plain text matching
     raw_blocks = [blk.strip() for blk in _BLOCK_SPLIT.split(page_text or "") if blk.strip()]
     normalized_page = normalize_text(page_text)
 
@@ -48,7 +160,6 @@ def detect_availability(
         return MatchResult(False, reason="No team keyword found")
 
     if require_open_keyword:
-        # When multiple match blocks exist, require the team and availability phrase in the same block.
         blocks_to_check = raw_blocks if len(raw_blocks) > 1 else [page_text or ""]
         for block in blocks_to_check:
             norm_block = normalize_text(block)

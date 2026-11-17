@@ -1,0 +1,22 @@
+{
+  "active": true,
+  "alerted_match_keys": {
+    "b50c48b8f59cd42d": {
+      "title": "Smouha SC vs Al Ahly FC",
+      "sport": "basketball",
+      "date": "Thu 19 Nov 2026",
+      "tournament": "basketball men and juniors championship 2026/2027",
+      "notified_at": "2026-11-17T20:00:00Z"
+    },
+    "a7ba712768b6c879": {
+      "title": "Al Ahly FC vs Smouha SC",
+      "sport": "basketball",
+      "date": "Tue 17 Nov 2026",
+      "tournament": "basketball men and juniors championship 2026/2027",
+      "notified_at": "2026-11-17T19:25:23+00:00"
+    }
+  },
+  "last_notified_at": "2026-11-17T19:25:23+00:00",
+  "last_signature": "a7ba712768b6c879",
+  "missing_streak": 0
+}
