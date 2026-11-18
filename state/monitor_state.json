@@ -14,9 +14,16 @@
       "date": "Tue 17 Nov 2026",
       "tournament": "basketball men and juniors championship 2026/2027",
       "notified_at": "2026-11-17T19:25:23+00:00"
+    },
+    "09465b0d20c01701": {
+      "title": "Al Ahly FC vs Pyramids FC",
+      "sport": "football",
+      "date": "Mon 23 Nov 2026",
+      "tournament": "ORA League 2026/2027",
+      "notified_at": "2026-11-18T20:45:12+00:00"
     }
   },
-  "last_notified_at": "2026-11-17T19:25:23+00:00",
-  "last_signature": "a7ba712768b6c879",
+  "last_notified_at": "2026-11-18T20:45:12+00:00",
+  "last_signature": "09465b0d20c01701",
   "missing_streak": 0
 }
