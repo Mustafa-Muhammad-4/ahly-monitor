@@ -130,7 +130,6 @@ def detect_availability(
     require_open_keyword: bool,
     cards_data: list[dict] | None = None,
     football_only: bool = False,
-    require_bookable: bool = True,
 ) -> MatchResult:
     # If structured cards are present, use the high-fidelity parser
     if cards_data:
@@ -138,7 +137,7 @@ def detect_availability(
             cards_data,
             team_keywords=team_keywords,
             football_only=football_only,
-            require_bookable=require_bookable,
+            require_bookable=True,  # always require bookable for card-based detection
         )
         if matched_cards:
             primary = matched_cards[0]
