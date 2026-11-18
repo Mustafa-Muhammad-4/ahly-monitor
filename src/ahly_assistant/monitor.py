@@ -399,17 +399,13 @@ async def run_monitor(settings: Settings, telegram: TelegramClient, check_once: 
     state = _read_state()
 
     filter_desc = "كرة قدم فقط ⚽" if settings.football_only else "جميع الرياضات (قدم، سلة، طائرة، يد)"
-    if not check_once:
-        await telegram.send(
-            "🟢 Ahly Ticket Assistant بدأ المراقبة.\n"
-            f"الرابط المراقب: {settings.watch_url}\n"
-            f"الفريق: {settings.match_label}\n"
-            f"التصفية: {filter_desc}\n"
-            f"الفحص كل {settings.poll_interval_seconds} ثانية.\n"
-            "المراقبة لصفحة المباريات العامة؛ أول ما تنزل المباراة هيوصلك تفاصيلها كاملة هنا.",
-            button_text="🎟️ افتح صفحة المباريات الآن",
-            button_url=settings.watch_url,
-        )
+    LOG.info(
+        "Ahly Ticket Assistant started. Watching: %s | Target: %s | Filter: %s | Interval: %ss",
+        settings.watch_url,
+        settings.match_label,
+        filter_desc,
+        settings.poll_interval_seconds,
+    )
 
     start_time = asyncio.get_running_loop().time()
     max_duration_seconds = (settings.run_duration_minutes * 60) if settings.run_duration_minutes else None
