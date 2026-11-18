@@ -4,20 +4,29 @@ on:
   workflow_dispatch:
   push:
     branches: [ main, master ]
+    paths-ignore:
+      - 'state/**'
+      - '*.md'
   schedule:
-    - cron: '0 */5 * * *'
+    - cron: '*/25 * * * *'
 
 concurrency:
   group: ahly-ticket-monitor
-  cancel-in-progress: false
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  actions: write
 
 jobs:
   monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    timeout-minutes: 340
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -30,15 +39,23 @@ jobs:
           pip install -r requirements.txt
           playwright install --with-deps chromium
 
-      - name: Run Monitor (every 2 seconds)
-        timeout-minutes: 320
-        continue-on-error: true
+      - name: Run Monitor (Self-renewing)
         env:
           PYTHONPATH: src
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           POLL_INTERVAL_SECONDS: "2"
+          RUN_DURATION_MINUTES: "300"
+          FOOTBALL_ONLY: "true"
+          MATCH_LABEL: "الأهلي / منتخب مصر"
           OPEN_BROWSER_ON_MATCH: "false"
           SOUND_ALERT_ON_MATCH: "false"
         run: |
           python -m ahly_assistant.cli
+
+      - name: Trigger next relay run before exit
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run monitor.yml || true
