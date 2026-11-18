@@ -20,13 +20,14 @@ def normalize_text(value: str) -> str:
 
 
 def detect_sport(tournament: str, context: str = "") -> tuple[str, str]:
-    """Detect sport from tournament name or context."""
+    """Detect sport from tournament name or context in Arabic and English."""
     combined = normalize_text(f"{tournament} {context}")
     if any(k in combined for k in ("basket", "سله")):
         return "basketball", "🏀 كرة سلة (Basketball)"
     if any(k in combined for k in ("volley", "طايره", "طائره")):
         return "volleyball", "🏐 كرة طائرة (Volleyball)"
-    if any(k in combined for k in ("handball", "يد")):
+    handball_terms = ("handball", "كره يد", "كرة يد", "كره اليد", "كرة اليد", "دوري اليد", "دورى اليد", "كاس اليد", "كأس اليد")
+    if any(k in combined for k in handball_terms) or re.search(r"\bيد\b", combined):
         return "handball", "🤾 كرة يد (Handball)"
     return "football", "⚽ كرة قدم (Football)"
 

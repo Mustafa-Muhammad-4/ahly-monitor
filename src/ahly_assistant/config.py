@@ -24,7 +24,10 @@ except ImportError:  # pragma: no cover
 DEFAULT_TEAMS = (
     "الأهلي",
     "الاهلي",
+    "الأهلى",
+    "الاهلى",
     "النادي الأهلي",
+    "النادى الاهلى",
     "Al Ahly",
     "Al-Ahly",
     "AlAhly",
@@ -35,6 +38,9 @@ DEFAULT_TEAMS = (
     "Egypt",
     "Egyptian National Team",
     "الفراعنة",
+    "فراعنة",
+    "The Pharaohs",
+    "Pharaohs",
 )
 
 

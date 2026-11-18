@@ -57,10 +57,22 @@ CARDS_EXTRACTOR_JS = r"""() => {
             const label = b.querySelector('.first')?.innerText?.trim() || '';
             const val = b.querySelector('.second')?.innerText?.trim() || '';
             const fullText = b.innerText?.trim() || '';
-            if (label.toLowerCase().includes('tournament') || label.includes('بطولة') || label.includes('البطولة')) {
-                tournament = val || label.replace(/^(البطولة|بطولة)\s*:?\s*/i, '');
-            } else if (!tournament && (fullText.includes('بطولة') || fullText.includes('البطولة') || fullText.toLowerCase().includes('tournament'))) {
-                tournament = fullText.replace(/^(البطولة|بطولة)\s*:?\s*/i, '');
+            const isTournLabel = label.toLowerCase().includes('tournament') || 
+                                label.toLowerCase().includes('competition') || 
+                                label.toLowerCase().includes('championship') || 
+                                label.toLowerCase().includes('league') || 
+                                label.includes('بطولة') || 
+                                label.includes('البطولة') || 
+                                label.includes('المسابقة') || 
+                                label.includes('الدوري');
+            if (isTournLabel) {
+                tournament = val || label.replace(/^(البطولة|بطولة|المسابقة|الدوري|tournament|competition|league|championship)\s*:?\s*/i, '');
+            } else if (!tournament) {
+                const lowerFull = fullText.toLowerCase();
+                if (lowerFull.includes('tournament') || lowerFull.includes('championship') || lowerFull.includes('league') || 
+                    fullText.includes('بطولة') || fullText.includes('البطولة') || fullText.includes('المسابقة') || fullText.includes('الدوري')) {
+                    tournament = fullText.replace(/^(البطولة|بطولة|المسابقة|الدوري|tournament|competition|league|championship)\s*:?\s*/i, '');
+                }
             }
         }
         
