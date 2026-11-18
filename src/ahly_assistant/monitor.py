@@ -32,46 +32,72 @@ LOG = logging.getLogger("ahly_assistant")
 STATE_PATH = Path("state/monitor_state.json")
 RESET_CONFIRMATIONS_REQUIRED = 5
 
-CARDS_EXTRACTOR_JS = """() => {
+CARDS_EXTRACTOR_JS = r"""() => {
     const cards = Array.from(document.querySelectorAll('.match'));
     const data = [];
     for (const c of cards) {
-        const team1 = c.querySelector('.team-name.first')?.innerText?.trim() || '';
-        const team2 = c.querySelector('.team-name.second')?.innerText?.trim() || '';
-        if (!team1 || !team2) continue;
+        let team1 = c.querySelector('.team-name.first')?.innerText?.trim() || '';
+        let team2 = c.querySelector('.team-name.second')?.innerText?.trim() || '';
+        if (!team1 || !team2) {
+            const names = Array.from(c.querySelectorAll('.team-name'));
+            if (names.length >= 2) {
+                team1 = names[0].innerText?.trim() || '';
+                team2 = names[1].innerText?.trim() || '';
+            }
+        }
+        if (!team1 && !team2) continue;
         
-        const stadium = c.querySelector('.stadium .info')?.innerText?.trim() || '';
-        const date = c.querySelector('.when .info .first')?.innerText?.trim() || '';
-        const time = c.querySelector('.when .info .second')?.innerText?.trim() || '';
+        const stadium = c.querySelector('.stadium .info, .stadium span, .stadium')?.innerText?.trim() || '';
+        const date = c.querySelector('.when .info .first, .when .first')?.innerText?.trim() || '';
+        const time = c.querySelector('.when .info .second, .when .second')?.innerText?.trim() || '';
         
-        const bottomOnes = Array.from(c.querySelectorAll('.bottom .one'));
+        const bottomOnes = Array.from(c.querySelectorAll('.bottom .one, .bottom > div'));
         let tournament = '';
         for (const b of bottomOnes) {
             const label = b.querySelector('.first')?.innerText?.trim() || '';
             const val = b.querySelector('.second')?.innerText?.trim() || '';
-            if (label.toLowerCase().includes('tournament')) tournament = val;
+            const fullText = b.innerText?.trim() || '';
+            if (label.toLowerCase().includes('tournament') || label.includes('بطولة') || label.includes('البطولة')) {
+                tournament = val || label.replace(/^(البطولة|بطولة)\s*:?\s*/i, '');
+            } else if (!tournament && (fullText.includes('بطولة') || fullText.includes('البطولة') || fullText.toLowerCase().includes('tournament'))) {
+                tournament = fullText.replace(/^(البطولة|بطولة)\s*:?\s*/i, '');
+            }
         }
         
-        const btn = c.querySelector('button');
-        const btnText = btn?.innerText?.trim() || '';
-        const isDisabled = btn?.disabled || false;
-        const isBookable = !isDisabled && (
-            btnText.toLowerCase().includes('book') || 
+        const btn = c.querySelector('button, a.button, .button, [role="button"]');
+        const btnText = (btn?.innerText || '').trim();
+        const cardText = c.innerText || '';
+        
+        const isDisabled = btn?.disabled || 
+                           btn?.classList?.contains('disabled') || 
+                           btn?.getAttribute('aria-disabled') === 'true';
+        
+        const isEnded = isDisabled || 
+                        btnText.includes('انتهت') || 
+                        btnText.includes('نفدت') || 
+                        btnText.toLowerCase().includes('ended') || 
+                        btnText.toLowerCase().includes('closed') ||
+                        btnText.toLowerCase().includes('sold out');
+        
+        const isBookable = !isEnded && (
+            btnText.includes('حجز') || 
             btnText.includes('احجز') || 
-            c.innerText.includes('Available')
+            btnText.toLowerCase().includes('book') || 
+            cardText.includes('متاح') || 
+            cardText.toLowerCase().includes('available')
         );
         
         data.push({
             team1,
             team2,
-            title: `${team1} vs ${team2}`,
+            title: `${team1} vs ${team2}`.trim(),
             stadium,
             date,
             time,
             tournament,
             btnText,
             is_bookable: isBookable,
-            status: isBookable ? 'Available' : (btnText || 'Ended')
+            status: isBookable ? 'متاح / Available' : (btnText || (isEnded ? 'انتهت / Ended' : 'غير متاح'))
         });
     }
     return data;

@@ -43,6 +43,14 @@ class TelegramClient:
             raise TelegramError(f"Telegram {method} network error: {safe_msg}") from None
 
         if not data.get("ok"):
+            params = data.get("parameters") or {}
+            migrated_to = params.get("migrate_to_chat_id")
+            if migrated_to:
+                logging.warning("Telegram chat %s migrated to %s. Updating chat ID automatically.", self._chat_id, migrated_to)
+                self._chat_id = str(migrated_to)
+                if payload and "chat_id" in payload:
+                    payload["chat_id"] = self._chat_id
+                    return await self._call(method, payload)
             desc = redact_token(str(data.get("description", f"Telegram {method} failed")), self._token)
             raise TelegramError(desc)
         return data["result"]
