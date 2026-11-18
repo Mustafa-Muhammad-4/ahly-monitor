@@ -338,6 +338,21 @@ async def read_public_page(settings: Settings, page) -> tuple[str, str, list[dic
 
     cards_data: list[dict] = []
     try:
+        # Click all "View More" buttons to expand the full match list
+        view_more_clicked = 0
+        for _ in range(20):  # max 20 pages to be safe
+            view_more = page.locator('button:has-text("View More"), button:has-text("عرض المزيد"), button:has-text("مزيد")')
+            count = await view_more.count()
+            if count == 0:
+                break
+            try:
+                await view_more.first.click(timeout=3_000)
+                await page.wait_for_timeout(800)
+                view_more_clicked += 1
+            except Exception:
+                break
+        if view_more_clicked:
+            LOG.debug("Clicked 'View More' %d time(s) to load all matches.", view_more_clicked)
         cards_data = await page.evaluate(CARDS_EXTRACTOR_JS)
     except Exception as exc:  # pragma: no cover
         LOG.debug("Cards extractor returned error: %s", exc)
