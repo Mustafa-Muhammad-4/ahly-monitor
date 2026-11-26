@@ -21,9 +21,16 @@
       "date": "Mon 23 Nov 2026",
       "tournament": "ORA League 2026/2027",
       "notified_at": "2026-11-18T20:45:12+00:00"
+    },
+    "6f4c77b9b9ef0262": {
+      "title": "Al Ahly FC vs Primeiro de augusto",
+      "sport": "football",
+      "date": "Sun 29 Nov 2026",
+      "tournament": "CAF Confederation Cup 2026/2027",
+      "notified_at": "2026-11-26T17:51:29+00:00"
     }
   },
-  "last_notified_at": "2026-11-18T20:45:12+00:00",
-  "last_signature": "09465b0d20c01701",
+  "last_notified_at": "2026-11-26T17:51:29+00:00",
+  "last_signature": "6f4c77b9b9ef0262",
   "missing_streak": 0
 }
